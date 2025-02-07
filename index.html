@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AZYR ARCH</title>
+    <script src="https://unpkg.com/react@15/dist/react.js"></script>
+    <script src="https://unpkg.com/react-dom@15/dist/react-dom.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at 75% 50%, #1d1a4a, transparent 60%), 
+                        linear-gradient(120deg, #0a0a0a, #0b1630);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        .grid-bg {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), 
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 120px 120px;
+            position: absolute;
+            inset: 0;
+            mix-blend-mode: soft light;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function App() {
+            return (
+                <div className="relative min-h-screen flex flex-col items-start justify-center pl-20">
+                    <div className="grid-bg"></div>
+
+                    <nav className="absolute top-6 left-6 flex justify-between w-full px-10">
+                        <div className="text-white font-semibold">AZYR <span className="text-gray-700">|</span> ASSET</div>
+                        <div className="flex space-x-6 text-gray-400">
+                        </div>
+                    </nav>
+
+                    <div className="max-w-lg">
+                        <h1 className="text-3xl font-bold leading-snug">
+                            AZYR, <br /> SWIFT
+                        </h1>
+                        <p className="text-gray-700 mt-4">
+                            idk i‘ll think of a tagline later, im busy developing
+                        </p>
+
+                        <div className="mt-6 flex items-center space-x-4">
+                            <button className="px-6 py-2 bg-blue-900 rounded-full hover:bg-purple-700">
+                                DEMO
+                            </button>
+                            <span className="text-gray-700"> </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+</body>
+</html>
