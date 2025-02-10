@@ -1,1 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ARYZ DEMO</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.3/hands.js" crossorigin="anonymous"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 75% 50%, #1d1a4a, transparent 60%), 
+                  linear-gradient(120deg, #0a0a0a, #0b1630);
+      color: white;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .grid-bg {
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), 
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 120px 120px;
+      position: absolute;
+      inset: 0;
+      mix-blend-mode: soft light;
+      opacity: 0.6;
+    }
+    .fps-display {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      z-index: 1000;
+      mix-blend-mode: soft light;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .container {
+      position: relative;
+      width: auto;
+      height: auto;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .input_video {
+      position: absolute;
+      display: none;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .output_canvas {
+      position: absolute;
+      z-index: 1;
+      border-radius: 24px;
+      border: 0px solid #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="fps-display" id="fpsDisplay">FPS : 0 | RIGHT : -,- | LEFT : -,-</div>
+  <div class="container">
+    <video class="input_video" autoplay></video>
+    <canvas class="output_canvas" id="outputCanvas"></canvas>
+  </div>
+  <script>
+    const videoElement = document.getElementsByClassName("input_video")[0];
+    const canvasElement = document.getElementById("outputCanvas");
+    const canvasCtx = canvasElement.getContext("2d");
+    const fpsDisplay = document.getElementById("fpsDisplay");
 
+    function resizeCanvas() {
+      canvasElement.width = window.innerWidth - 40;
+      canvasElement.height = window.innerHeight - 40;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let fps = 0;
+    let lastFrameTime = performance.now();
+
+    function calculateFPS() {
+      const now = performance.now();
+      fps = Math.round(1000 / (now - lastFrameTime));
+      lastFrameTime = now;
+    }
+
+    function drawPalmCenter(x, y) {
+      const radius = 2.5; 
+      canvasCtx.beginPath();
+      canvasCtx.arc(x * canvasElement.width, y * canvasElement.height, radius, 0, 2 * Math.PI);
+      canvasCtx.fillStyle = '#ffffff40'; 
+      canvasCtx.fill();
+    }
+
+    function onResults(results) {
+      calculateFPS();
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      
+      let rightHandCoords = "-,-,-";
+      let leftHandCoords = "-,-,-";
+      let rightPalmCoords = "-,-,-";
+      let leftPalmCoords = "-,-,-";
+
+      if (results.multiHandLandmarks && results.multiHandedness) {
+        for (let index = 0; index < results.multiHandLandmarks.length; index++) {
+          const classification = results.multiHandedness[index];
+          const isRightHand = classification.label === "Right";
+          const landmarks = results.multiHandLandmarks[index];
+
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: "#ffffff40" });
+          drawLandmarks(canvasCtx, landmarks, { color: "#ffffff40", fillColor: "#ffffff40", radius: 0.5 });
+
+          const wristLandmark = landmarks[0]; // wrist
+          const pinkyBaseLandmark = landmarks[17]; // pinky 
+          const indexBaseLandmark = landmarks[5]; // index 
+          
+          // eval palm
+          const palmCenter = {
+            x: (wristLandmark.x + pinkyBaseLandmark.x + indexBaseLandmark.x) / 3,
+            y: (wristLandmark.y + pinkyBaseLandmark.y + indexBaseLandmark.y) / 3,
+          };
+
+          // palm dot
+          drawPalmCenter(palmCenter.x, palmCenter.y);
+
+          if (isRightHand) {
+            rightHandCoords = `${wristLandmark.x.toFixed(2)}, ${wristLandmark.y.toFixed(2)}, ${wristLandmark.z.toFixed(2)}`;
+            rightPalmCoords = `${palmCenter.x.toFixed(2)}, ${palmCenter.y.toFixed(2)}`;
+          } else {
+            leftHandCoords = `${wristLandmark.x.toFixed(2)}, ${wristLandmark.y.toFixed(2)}, ${wristLandmark.z.toFixed(2)}`;
+            leftPalmCoords = `${palmCenter.x.toFixed(2)}, ${palmCenter.y.toFixed(2)}`;
+          }
+        }
+      }
+
+      fpsDisplay.textContent = `FPS : ${fps} | RIGHT : ${rightHandCoords} | RIGHT PALM : ${rightPalmCoords} | LEFT : ${leftHandCoords} | LEFT PALM : ${leftPalmCoords}`;
+      canvasCtx.restore();
+    }
+
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.3/${file}`,
+    });
+
+    hands.setOptions({
+      selfieMode: true,
+      maxNumHands: 6,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
+    hands.onResults(onResults);
+
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({ image: videoElement });
+      },
+      width: 1080,
+      height: 660,
+    });
+
+    camera.start();
+  </script>
+</body>
+</html>
